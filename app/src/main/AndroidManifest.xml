@@ -12,7 +12,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <!-- ## End 'Protection-Normal' permissions ## -->
-
+    <uses-feature
+        android:name="android.hardware.sensor.accelerometer"
+        android:required="false" />
+        
     <!-- ## 'Special' permissions ##-->
     <!-- Used to set ringtone-->
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>

@@ -23,9 +23,12 @@ import com.simplecity.amp_library.BuildConfig;
 import com.simplecity.amp_library.R;
 import com.simplecity.amp_library.ShuttleApplication;
 import com.simplecity.amp_library.dagger.module.ActivityModule;
+import com.simplecity.amp_library.interfaces.AccelerometerListener;
 import com.simplecity.amp_library.model.Playlist;
 import com.simplecity.amp_library.model.Query;
 import com.simplecity.amp_library.playback.MediaManager;
+import com.simplecity.amp_library.playback.PlaybackManager;
+import com.simplecity.amp_library.playback.ShakeManager;
 import com.simplecity.amp_library.playback.constants.ShortcutCommands;
 import com.simplecity.amp_library.sql.sqlbrite.SqlBriteUtils;
 import com.simplecity.amp_library.ui.dialog.ChangelogDialog;
@@ -52,7 +55,8 @@ import test.com.androidnavigation.fragment.BackPressListener;
 public class MainActivity extends BaseCastActivity implements
         ToolbarListener,
         BackPressHandler,
-        DrawerProvider {
+        DrawerProvider,
+        AccelerometerListener{
 
     private static final String TAG = "MainActivity";
 
@@ -70,9 +74,12 @@ public class MainActivity extends BaseCastActivity implements
     @Inject
     MediaManager mediaManager;
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
 
         AnalyticsManager.dropBreadcrumb(TAG, "onCreate()");
 
@@ -117,6 +124,8 @@ public class MainActivity extends BaseCastActivity implements
         }
 
         handleIntent(getIntent());
+
+
     }
 
     @Override
@@ -125,6 +134,9 @@ public class MainActivity extends BaseCastActivity implements
         AnalyticsManager.dropBreadcrumb(TAG, "onCreate()");
 
         showChangelogDialog();
+        if (ShakeManager.isSupported(this)) {
+            ShakeManager.startListening(this);
+        }
     }
 
     @Override
@@ -150,11 +162,30 @@ public class MainActivity extends BaseCastActivity implements
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+
+
+        if (ShakeManager.isListening()) {
+
+
+            ShakeManager.stopListening();
+
+
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
 
         AnalyticsManager.dropBreadcrumb(TAG, "onDestroy()");
-    }
+
+        if (ShakeManager.isListening()) {
+            ShakeManager.stopListening();
+        }
+
+        }
 
     private void handleIntent(Intent intent) {
         Single.fromCallable(() -> {
@@ -314,5 +345,18 @@ public class MainActivity extends BaseCastActivity implements
     @Override
     public DrawerLayout getDrawerLayout() {
         return drawerLayout;
+    }
+
+
+    @Override
+    public void onAccelerationChanged(float x, float y, float z) {
+
+    }
+
+    @Override
+    public void onShake(float force) {
+      //  Toast.makeText(this, "Motion detected", Toast.LENGTH_SHORT).show();
+        mediaManager.next();
+
     }
 }

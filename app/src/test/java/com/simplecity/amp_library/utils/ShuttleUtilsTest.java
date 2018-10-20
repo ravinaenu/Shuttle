@@ -8,15 +8,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorEventListener2;
 import android.net.Uri;
+import android.util.Log;
 
 import com.simplecity.amp_library.model.Song;
+import com.simplecity.amp_library.playback.ShakeManager;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -131,6 +142,71 @@ public class ShuttleUtilsTest {
         when(mockContentResolver.update(any(Uri.class), contentValuesCaptor.capture(), nullable(String.class), nullable(String[].class))).thenReturn(1);
         ShuttleUtils.incrementPlayCount(mockContext, spySong);
         verify(mockContentResolver, never()).insert(any(Uri.class), any(ContentValues.class));
+    }
+
+
+    @Test
+    public void testOnSensorChangedForAcceleratorMeter() throws Exception {
+        Intent intent=new Intent();
+
+        ShakeManager shakeManager = new ShakeManager();
+     //   shakeManager.sensorEventListener.
+
+                // onStartCommand(intent,-1,-1);
+
+
+
+        SensorEvent sensorEvent=getEvent();
+
+        Sensor sensor=getSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorEvent.sensor=sensor;
+
+        sensorEvent.values[0]=3.2345f;
+        sensorEvent.values[1]=4.45f;
+        sensorEvent.values[2]=3.6998f;
+
+
+
+        Field field1=shakeManager.sensorEventListener.getClass().getDeclaredField("lastShake");
+        field1.setAccessible(true);
+        field1.setLong(shakeManager.sensorEventListener, 0L);
+
+        Field field2=shakeManager.getClass().getDeclaredField("interval");
+        field2.setAccessible(true);
+        field2.setInt(shakeManager.sensorEventListener, 4500);
+
+        shakeManager.sensorEventListener.onSensorChanged(sensorEvent);
+
+        Field field=shakeManager.sensorEventListener.getClass().getDeclaredField("accValues");
+        field.setAccessible(true);
+        float[] result= (float[]) field.get(shakeManager.sensorEventListener);
+
+        Assert.assertEquals(sensorEvent.values.length,result.length);
+        Assert.assertEquals(sensorEvent.values[0],result[0],0.0f);
+        Assert.assertEquals(sensorEvent.values[1],result[1],0.0f);
+        Assert.assertEquals(sensorEvent.values[2],result[2],0.0f);
+    }
+
+
+
+
+    private Sensor getSensor(int type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, NoSuchFieldException {
+        Constructor<Sensor> constructor = Sensor.class.getDeclaredConstructor(new Class[0]);
+        constructor.setAccessible(true);
+        Sensor sensor= constructor.newInstance(new Object[0]);
+
+        Field field=sensor.getClass().getDeclaredField("mType");
+        field.setAccessible(true);
+        field.set(sensor,type);
+        return sensor;
+    }
+
+
+
+    private SensorEvent getEvent() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Constructor<SensorEvent> constructor = SensorEvent.class.getDeclaredConstructor(int.class);
+        constructor.setAccessible(true);
+        return constructor.newInstance(new Object[]{3});
     }
 
 }
